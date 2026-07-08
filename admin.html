@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="page-header">
+    <h2>Admin Dashboard</h2>
+    <button class="btn-ghost" onclick="logout()">Logout</button>
+</header>
+
+<section class="panel">
+    <h3>Assign Movie to Theatre</h3>
+    <div class="form-grid">
+        <div class="field">
+            <label for="movie_id">Movie ID</label>
+            <input type="number" id="movie_id" placeholder="e.g. 12">
+        </div>
+        <div class="field">
+            <label for="screen_id">Screen ID</label>
+            <input type="number" id="screen_id" placeholder="e.g. 3">
+        </div>
+        <div class="field">
+            <label for="time">Show Time</label>
+            <select id="time"></select>
+        </div>
+        <div class="field">
+            <label for="date">Show Date</label>
+            <input type="date" id="date">
+        </div>
+    </div>
+    <button class="btn-primary" onclick="assignMovie()">Assign Movie</button>
+</section>
+
+<section class="panel">
+    <h3>Total Revenue</h3>
+    <button class="btn-primary" onclick="getRevenue()">Get Revenue</button>
+    <p id="revenue" class="stat-line"></p>
+</section>
+
+<section class="panel">
+    <h3>All Bookings</h3>
+    <button class="btn-primary" onclick="getBookings()">View Bookings</button>
+    <div id="bookings" class="data-dump"></div>
+</section>
+
+<section class="panel">
+    <h3>Show Status (Housefull / Available)</h3>
+    <button class="btn-primary" onclick="getShowStatus()">Check Status</button>
+    <div id="status" class="data-dump"></div>
+</section>
+
+<section class="panel">
+    <h3>Reviews Summary</h3>
+    <button class="btn-primary" onclick="getReviews()">View Reviews</button>
+    <div id="reviews" class="data-dump"></div>
+</section>
+
+<script>
+
+function logout() {
+    localStorage.clear();
+    window.location.href = "login.html";
+}
+
+function assignMovie() {
+    const movie_id = document.getElementById("movie_id").value;
+    const screen_id = document.getElementById("screen_id").value;
+    const time = document.getElementById("time").value;
+    const date = document.getElementById("date").value;
+
+    fetch("http://localhost:5000/admin/assign_movie?role=admin", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ movie_id, screen_id, time, date })
+    })
+    .then(res => res.json())
+    .then(data => alert(data.message));
+}
+
+function loadShowTimes() {
+    const select = document.getElementById("time");
+
+    select.innerHTML = `
+        <option value="">Select Time</option>
+        <option value="09:00">09:00</option>
+        <option value="13:00">13:00</option>
+        <option value="18:00">18:00</option>
+        <option value="22:00">22:00</option>
+    `;
+}
+
+loadShowTimes();
+
+function getRevenue() {
+    fetch("http://localhost:5000/admin/revenue?role=admin")
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById("revenue").innerText =
+            "Total Revenue: ₹" + data.total_revenue;
+    });
+}
+
+function getBookings() {
+    fetch("http://localhost:5000/admin/bookings?role=admin")
+    .then(res => res.json())
+    .then(data => {
+        let output = "";
+        data.forEach(b => {
+            output += `<p>${JSON.stringify(b)}</p>`;
+        });
+        document.getElementById("bookings").innerHTML = output;
+    });
+}
+
+function getShowStatus() {
+    fetch("http://localhost:5000/shows/status?role=admin")
+    .then(res => res.json())
+    .then(data => {
+        let output = "";
+        data.forEach(s => {
+            output += `<p>${JSON.stringify(s)}</p>`;
+        });
+        document.getElementById("status").innerHTML = output;
+    });
+}
+
+function getReviews() {
+    fetch("http://localhost:5000/reviews/summary?role=admin")
+    .then(res => res.json())
+    .then(data => {
+        let output = "";
+        data.forEach(r => {
+            output += `<p>${JSON.stringify(r)}</p>`;
+        });
+        document.getElementById("reviews").innerHTML = output;
+    });
+}
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Payment</title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="step-shell">
+    <h2>Payment</h2>
+
+    <section class="panel order-summary">
+        <div class="order-row">
+            <span>Seats</span>
+            <strong id="seats_display"></strong>
+        </div>
+        <div class="order-row order-row--total">
+            <span>Total Amount</span>
+            <strong>₹<span id="amount_display"></span></strong>
+        </div>
+    </section>
+
+    <section class="panel">
+        <div class="field">
+            <label for="type">Payment Method</label>
+            <select id="type">
+                <option value="card">Card</option>
+                <option value="upi">UPI</option>
+                <option value="cash">Cash</option>
+            </select>
+        </div>
+        <div class="field">
+            <label for="code">Payment Code</label>
+            <input type="text" id="code" placeholder="Enter code (12345)">
+        </div>
+        <button class="btn-primary" onclick="pay()">Pay Now</button>
+    </section>
+</div>
+
+<script>
+document.getElementById("amount_display").innerText = localStorage.getItem("amount");
+document.getElementById("seats_display").innerText = localStorage.getItem("seat_labels");
+
+function pay() {
+    const user_id = parseInt(localStorage.getItem("user_id"));
+    const movie_id = parseInt(localStorage.getItem("movie_id"));
+    const show_id = parseInt(localStorage.getItem("show_id"));
+    const seat_ids = JSON.parse(localStorage.getItem("seat_ids"));
+    const total = parseInt(localStorage.getItem("amount"));
+    const perSeatAmount = Math.floor(total / seat_ids.length);
+
+    const type = document.getElementById("type").value;
+    const code = document.getElementById("code").value;
+
+    // Pay for each seat
+    const payPromises = seat_ids.map(seat_id =>
+        fetch("http://localhost:5000/pay", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                user_id,
+                seat_id,
+                movie_id,
+                show_id,
+                type,
+                amount: perSeatAmount,
+                discount: 0,
+                code
+            })
+        }).then(res => res.json())
+    );
+
+    Promise.all(payPromises)
+    .then(results => {
+        const failed = results.find(r => r.error || r.message === "Payment Failed: Invalid Code");
+        if (failed) {
+            alert(failed.message || failed.error);
+            return;
+        }
+
+        // Use last result for success page details
+        const last = results[results.length - 1];
+        localStorage.setItem("booking_id", last.booking_id);
+        localStorage.setItem("movie_name", last.movie_name);
+        localStorage.setItem("theatre_name", last.theatre_name);
+        localStorage.setItem("screen_id", last.screen_id);
+        localStorage.setItem("show_time", last.show_time);
+        localStorage.setItem("rating", last.rating);
+
+        window.location.href = "success.html";
+    });
+}
+</script>
+
+</body>
+</html>

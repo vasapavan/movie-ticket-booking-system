@@ -1,0 +1,66 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Booking Success</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="step-shell step-shell--centered">
+
+    <header class="page-header page-header--center">
+        <h2>Booking Successful!</h2>
+        <button class="btn-ghost" onclick="logout()">Logout</button>
+    </header>
+
+    <div class="ticket">
+        <div class="ticket-row">
+            <span class="ticket-label">Booking ID</span>
+            <span id="bid" class="ticket-value"></span>
+        </div>
+        <div class="ticket-row">
+            <span class="ticket-label">Movie</span>
+            <span id="movie" class="ticket-value"></span>
+        </div>
+        <div class="ticket-row">
+            <span class="ticket-label">Theatre</span>
+            <span id="theatre" class="ticket-value"></span>
+        </div>
+        <div class="ticket-row">
+            <span class="ticket-label">Screen</span>
+            <span id="screen" class="ticket-value"></span>
+        </div>
+        <div class="ticket-row">
+            <span class="ticket-label">Seats</span>
+            <span id="seat" class="ticket-value"></span>
+        </div>
+        <div class="ticket-row">
+            <span class="ticket-label">Show Time</span>
+            <span id="time" class="ticket-value"></span>
+        </div>
+        <div class="ticket-stub">ADMIT ONE</div>
+    </div>
+
+    <a class="back-link" href="customer.html">&larr; Go Home</a>
+
+</div>
+
+<script>
+document.getElementById("bid").innerText = localStorage.getItem("booking_id");
+document.getElementById("movie").innerText = localStorage.getItem("movie_name");
+document.getElementById("theatre").innerText = localStorage.getItem("theatre_name");
+document.getElementById("screen").innerText = localStorage.getItem("screen_id");
+document.getElementById("seat").innerText = localStorage.getItem("seat_labels");
+document.getElementById("time").innerText = localStorage.getItem("show_time");
+
+
+function logout() {
+    localStorage.clear();
+    window.location.href = "login.html";
+}
+</script>
+
+</body>
+</html>

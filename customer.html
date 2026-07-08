@@ -1,0 +1,228 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Customer Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="page-header">
+    <h2>Welcome Customer</h2>
+    <button class="btn-ghost" onclick="logout()">Logout</button>
+</header>
+
+<section class="panel">
+    <div class="panel-toolbar">
+        <button class="btn-primary" onclick="getMovies()">Get Movies</button>
+        <div class="search-group">
+            <input type="text" id="search" placeholder="Search movie">
+            <button class="btn-secondary" onclick="searchMovie()">Search</button>
+        </div>
+    </div>
+    <div id="movies"></div>
+</section>
+
+<section class="panel">
+    <h3>My Bookings</h3>
+    <button class="btn-primary" onclick="getMyBookings()">View My Bookings</button>
+    <div id="my_bookings"></div>
+</section>
+
+<script>
+
+function logout() {
+    localStorage.clear();
+    window.location.href = "login.html";
+}
+
+function renderMovies(data) {
+    if (!data.length) {
+        document.getElementById("movies").innerHTML = "<p class=\"empty-note\">No movies found.</p>";
+        return;
+    }
+    let output = `
+        <table>
+            <tr>
+                <th>Movie Name</th>
+                <th>Rating</th>
+                <th>Reviews</th>
+            </tr>
+    `;
+    data.forEach(movie => {
+        const rating = (movie[2] !== undefined && movie[2] !== null)
+            ?  parseFloat(movie[2]).toFixed(1)
+            : "N/A";
+        const ratingClass = rating === "N/A" ? "rating-cell rating-cell--empty" : "rating-cell";
+        output += `
+            <tr>
+                <td class="movie-title" onclick="selectMovie(${movie[0]})">${movie[1]}</td>
+                <td class="${ratingClass}">${rating}</td>
+                <td class="row-actions"><button class="btn-secondary" onclick="viewReviews(${movie[0]}, '${movie[1]}')">View Reviews</button>
+                <button class="btn-secondary" onclick="giveReview(${movie[0]})">Add Review</button>
+                </td>
+            </tr>
+        `;
+    });
+    output += "</table>";
+    document.getElementById("movies").innerHTML = output;
+}
+
+function getMyBookings() {
+    const user_id = localStorage.getItem("user_id");
+
+    fetch(`http://localhost:5000/my_bookings/${user_id}`)
+    .then(res => res.json())
+    .then(data => {
+        if (!data.length) {
+            document.getElementById("my_bookings").innerHTML = "<p class=\"empty-note\">No bookings found.</p>";
+            return;
+        }
+        let output = `
+            <table>
+                <tr>
+                    <th>Movie</th>
+                    <th>Theatre</th>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>Screen</th>
+                    <th>Seat</th>
+                    <th>Payment</th>
+                    <th>Amount</th>
+                    <th>Discount</th>
+                    <th>Paid On</th>
+                </tr>
+        `;
+        data.forEach(b => {
+            output += `
+                <tr>
+                    <td>${b.movie}</td>
+                    <td>${b.theatre}</td>
+                    <td>${b.show_date}</td>
+                    <td>${b.show_time}</td>
+                    <td>${b.screen}</td>
+                    <td>${b.seat}</td>
+                    <td>${b.payment_type}</td>
+                    <td>₹${b.amount}</td>
+                    <td>₹${b.discount}</td>
+                    <td>${b.transactioned_time}</td>
+                </tr>
+            `;
+        });
+        output += "</table>";
+        document.getElementById("my_bookings").innerHTML = output;
+    });
+}
+
+function getMovies() {
+    fetch("http://localhost:5000/movies")
+    .then(res => res.json())
+    .then(data => renderMovies(data));
+}
+
+function searchMovie() {
+    const name = document.getElementById("search").value;
+
+    fetch(`http://localhost:5000/search?name=${name}`)
+    .then(res => res.json())
+    .then(data => renderMovies(data));
+}
+
+function viewReviews(movie_id, movie_name) {
+    document.getElementById("modal_title").innerText = "Reviews: " + movie_name;
+    document.getElementById("modal_body").innerHTML = "Loading...";
+    document.getElementById("review_modal").style.display = "flex";
+
+    fetch(`http://localhost:5000/reviews/${movie_id}`)
+    .then(res => res.json())
+    .then(data => {
+        if (!data.length) {
+            document.getElementById("modal_body").innerHTML = "<p class=\"empty-note\">No reviews yet.</p>";
+            return;
+        }
+        let html = "<table>";
+        html += "<tr><th>User</th><th>Rating</th><th>Opinion</th></tr>";
+        data.forEach(r => {
+            html += `<tr>
+                <td>${r[0]}</td>
+                <td class="rating-cell">${r[1]}</td>
+                <td>${r[2]}</td>
+            </tr>`;
+        });
+        html += "</table>";
+        document.getElementById("modal_body").innerHTML = html;
+    });
+}
+
+function closeModal() {
+    document.getElementById("review_modal").style.display = "none";
+}
+
+function selectMovie(movie_id) {
+    localStorage.setItem("movie_id", movie_id);
+    window.location.href = "theatres.html";
+}
+
+function giveReview(movie_id) {
+    localStorage.setItem("movie_id", movie_id);
+    document.getElementById("give_review_modal").style.display = "flex";
+}
+
+function submitReview() {
+    const user_id = parseInt(localStorage.getItem("user_id"));
+    const movie_id = parseInt(localStorage.getItem("movie_id"));
+    const rating = parseInt(document.getElementById("rev_rating").value);
+    const opinion = document.getElementById("rev_opinion").value.trim();
+
+    if (!rating || rating < 1 || rating > 5) { alert("Enter rating between 1 and 5."); return; }
+    if (!opinion) { alert("Please write your opinion."); return; }
+
+    fetch("http://localhost:5000/review", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id, movie_id, rating, opinion })
+    })
+    .then(res => res.json())
+    .then(data => {
+        const msg = data.message || data.error || "";
+        const clean = msg.split('CONTEXT')[0].trim();
+        alert(clean);
+        document.getElementById("give_review_modal").style.display = "none";
+        document.getElementById("rev_rating").value = "";
+        document.getElementById("rev_opinion").value = "";
+    });
+}
+</script>
+
+<!-- Reviews Modal -->
+<div id="review_modal" class="modal-overlay">
+    <div class="modal-box">
+        <h3 id="modal_title"></h3>
+        <div id="modal_body"></div>
+        <div class="modal-actions">
+            <button class="btn-secondary" onclick="closeModal()">Close</button>
+        </div>
+    </div>
+</div>
+
+<div id="give_review_modal" class="modal-overlay">
+    <div class="modal-box modal-box--narrow">
+        <h3>Add Review</h3>
+        <div class="field">
+            <label for="rev_rating">Rating (1 to 5)</label>
+            <input type="number" id="rev_rating" min="1" max="5" placeholder="e.g. 4">
+        </div>
+        <div class="field">
+            <label for="rev_opinion">Your Opinion</label>
+            <textarea id="rev_opinion" rows="4" placeholder="Write your thoughts..."></textarea>
+        </div>
+        <div class="modal-actions">
+            <button class="btn-primary" onclick="submitReview()">Submit</button>
+            <button class="btn-secondary" onclick="document.getElementById('give_review_modal').style.display='none'">Cancel</button>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

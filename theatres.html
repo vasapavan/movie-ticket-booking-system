@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Theatres</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="step-shell">
+    <a class="back-link" href="customer.html">&larr; Back to movies</a>
+    <h2>Select Theatre</h2>
+    <div id="theatres" class="option-list"></div>
+</div>
+
+<script>
+
+const movie_id = localStorage.getItem("movie_id");
+
+fetch(`http://localhost:5000/theatres/${movie_id}`)
+.then(res => res.json())
+.then(data => {
+    let output = "";
+    data.forEach(t => {
+        output += `<p onclick="selectTheatre(${t[0]})">${t[1]}</p>`;
+    });
+    document.getElementById("theatres").innerHTML = output;
+});
+
+function selectTheatre(theatre_id) {
+    localStorage.setItem("theatre_id", theatre_id);
+    window.location.href = "shows.html";
+}
+
+</script>
+
+</body>
+</html>

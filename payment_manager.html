@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Payment Manager Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="page-header">
+    <h2>Payment Manager Dashboard</h2>
+    <button class="btn-ghost" onclick="logout()">Logout</button>
+</header>
+
+<section class="panel">
+    <h3>Peak Booking Hours</h3>
+    <button class="btn-primary" onclick="getPeakHours()">Get Peak Hours</button>
+    <div id="peak_hours" class="table-wrap"></div>
+</section>
+
+<section class="panel">
+    <h3>Weekly Growth</h3>
+    <button class="btn-primary" onclick="getWeeklyGrowth()">Get Weekly Growth</button>
+    <div id="weekly_growth" class="table-wrap"></div>
+</section>
+
+<section class="panel">
+    <h3>Payment Summary</h3>
+    <button class="btn-primary" onclick="getPaymentSummary()">Get Summary</button>
+    <div id="payment_summary" class="table-wrap"></div>
+</section>
+
+<script>
+
+function logout() {
+    localStorage.clear();
+    window.location.href = "login.html";
+}
+
+function getPeakHours() {
+    fetch("http://localhost:5000/pm/peak_hour?role=payment_manager")
+    .then(res => res.json())
+    .then(data => {
+        let output = "<table><tr><th>Hour</th><th>Bookings</th></tr>";
+        data.forEach(row => {
+            output += `<tr><td>${row[0]}</td><td>${row[1]}</td></tr>`;
+        });
+        output += "</table>";
+        document.getElementById("peak_hours").innerHTML = output;
+    });
+}
+
+// 🔹 Weekly Growth
+function getWeeklyGrowth() {
+    fetch("http://localhost:5000/pm/weekly_growth?role=payment_manager")
+    .then(res => res.json())
+    .then(data => {
+        let output = "<table><tr><th>Week</th><th>Revenue</th></tr>";
+        data.forEach(row => {
+            output += `<tr><td>${row[0]}</td><td>Rs ${row[1]}</td></tr>`;
+        });
+        output += "</table>";
+        document.getElementById("weekly_growth").innerHTML = output;
+    });
+}
+
+// 🔹 Payment Summary
+function getPaymentSummary() {
+    fetch("http://localhost:5000/pm/payment_summary?role=payment_manager")
+    .then(res => res.json())
+    .then(data => {
+        let output = "<table>";
+        
+        if (data.length > 0) {
+            output += "<tr>";
+            data[0].forEach((_, index) => {
+                output += `<th>Column ${index+1}</th>`;
+            });
+            output += "</tr>";
+
+            data.forEach(row => {
+                output += "<tr>";
+                row.forEach(col => {
+                    output += `<td>${col}</td>`;
+                });
+                output += "</tr>";
+            });
+        }
+
+        output += "</table>";
+        document.getElementById("payment_summary").innerHTML = output;
+    });
+}
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Movie Booking Login</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="auth-shell">
+
+    <section class="auth-card">
+        <h2>Log In</h2>
+        <div class="field">
+            <label for="email">Email</label>
+            <input type="email" id="email" placeholder="you@example.com">
+        </div>
+        <div class="field">
+            <label for="password">Password</label>
+            <input type="password" id="password" placeholder="••••••••">
+        </div>
+        <button class="btn-primary" onclick="login()">Log In</button>
+    </section>
+
+    <div class="auth-divider"><span>or create an account</span></div>
+
+    <section class="auth-card">
+        <h2>Sign Up</h2>
+        <div class="field">
+            <label for="name">Name</label>
+            <input type="text" id="name" placeholder="Full name">
+        </div>
+        <div class="field">
+            <label for="signup_email">Email</label>
+            <input type="email" id="signup_email" placeholder="you@example.com">
+        </div>
+        <div class="field">
+            <label for="age">Age</label>
+            <input type="number" id="age" placeholder="Age">
+        </div>
+        <div class="field">
+            <label for="signup_password">Password</label>
+            <input type="password" id="signup_password" placeholder="••••••••">
+        </div>
+        <button class="btn-primary" onclick="signup()">Sign Up</button>
+    </section>
+
+</div>
+
+<script>
+
+function login() {
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+
+    fetch("http://localhost:5000/login", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ email, password })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.role === "customer") {
+            localStorage.setItem("user_id", data.user_id);
+            window.location.href = "customer.html";
+        } 
+        else if (data.role === "admin") {
+            window.location.href = "admin.html";
+        } 
+        else if (data.role === "payment_manager") {
+            window.location.href = "payment_manager.html";
+        } 
+        else {
+            alert(data.message);
+        }
+    });
+}
+
+function signup() {
+    const name = document.getElementById("name").value;
+    const email = document.getElementById("signup_email").value;
+    const age = document.getElementById("age").value;
+    const password = document.getElementById("signup_password").value;
+
+    fetch("http://localhost:5000/signup", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ name, email, age, password })
+    })
+    .then(res => res.json())
+    .then(data => alert(data.message));
+}
+
+</script>
+
+</body>
+</html>

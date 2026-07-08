@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Seats</title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="page-header">
+    <h2>Select Seats</h2>
+    <button class="btn-ghost" onclick="logout()">Logout</button>
+</header>
+
+<p class="hint-text">Tap seats to select or deselect them.</p>
+
+<div id="seats" class="seat-grid"></div>
+
+<div class="seat-summary">
+    <div>
+        <span class="seat-summary-label">Selected seats</span>
+        <span id="selected_labels">None</span>
+    </div>
+    <div>
+        <span class="seat-summary-label">Total</span>
+        <span id="total_amount">₹0</span>
+    </div>
+    <button onclick="confirmSeats()" class="btn-primary" id="confirm_btn">Confirm &amp; Proceed to Payment</button>
+</div>
+
+<script>
+
+const show_id = localStorage.getItem("show_id");
+let selectedSeats = [];  
+
+fetch(`http://localhost:5000/seats/${show_id}`)
+.then(res => res.json())
+.then(data => {
+    let output = "";
+    data.forEach(seat => {
+        output += `
+            <button 
+                id="seat_${seat[0]}"
+                onclick="toggleSeat(${seat[0]}, ${seat[1]}, '${seat[2]}', ${seat[3]})"
+                class="seat-btn">
+                <span class="seat-no">${seat[1]}</span>
+                <span class="seat-type">${seat[2]}</span>
+                <span class="seat-price">₹${seat[3]}</span>
+            </button>`;
+    });
+    document.getElementById("seats").innerHTML = output;
+});
+
+function logout() {
+    localStorage.clear();
+    window.location.href = "login.html";
+}
+
+function toggleSeat(seat_id, seat_no, seat_type, price) {
+    const idx = selectedSeats.findIndex(s => s.seat_id === seat_id);
+    const btn = document.getElementById("seat_" + seat_id);
+
+    if (idx === -1) {
+        // Select it
+        selectedSeats.push({ seat_id, seat_no, seat_type, price });
+        btn.classList.add("seat-btn--selected");
+    } else {
+        // Deselect it
+        selectedSeats.splice(idx, 1);
+        btn.classList.remove("seat-btn--selected");
+    }
+
+    updateSummary();
+}
+
+function updateSummary() {
+    if (selectedSeats.length === 0) {
+        document.getElementById("selected_labels").innerText = "None";
+        document.getElementById("total_amount").innerText = "₹0";
+        document.getElementById("confirm_btn").style.display = "none";
+    } else {
+        const labels = selectedSeats.map(s => `${s.seat_no} (${s.seat_type})`).join(", ");
+        const total = selectedSeats.reduce((sum, s) => sum + s.price, 0);
+        document.getElementById("selected_labels").innerText = labels;
+        document.getElementById("total_amount").innerText = "₹" + total;
+        document.getElementById("confirm_btn").style.display = "inline-block";
+    }
+}
+
+function confirmSeats() {
+    const user_id = parseInt(localStorage.getItem("user_id"));
+    const movie_id = parseInt(localStorage.getItem("movie_id"));
+    const show_id = parseInt(localStorage.getItem("show_id"));
+
+    const seat_ids = selectedSeats.map(s => s.seat_id);
+    const total = selectedSeats.reduce((sum, s) => sum + s.price, 0);
+
+    // Book all seats one by one
+    const bookingPromises = seat_ids.map(seat_id =>
+        fetch("http://localhost:5000/book_seat", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({ user_id, seat_id, movie_id, show_id })
+        }).then(res => res.json())
+    );
+
+    Promise.all(bookingPromises)
+    .then(results => {
+        const failed = results.find(r => r.error);
+        if (failed) {
+            alert("Booking failed: " + failed.error);
+            return;
+        }
+        // Save all seat_ids as JSON array and total amount
+        localStorage.setItem("seat_ids", JSON.stringify(seat_ids));
+        localStorage.setItem("seat_labels", selectedSeats.map(s => `${s.seat_no}(${s.seat_type})`).join(", "));
+        localStorage.setItem("amount", total);
+        window.location.href = "payment.html";
+    });
+}
+
+</script>
+
+</body>
+</html>

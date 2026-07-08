@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Shows</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="step-shell">
+    <a class="back-link" href="theatres.html">&larr; Back to theatres</a>
+    <h2>Select Show</h2>
+    <div id="shows" class="option-list"></div>
+</div>
+
+<script>
+
+const movie_id = parseInt(localStorage.getItem("movie_id"));
+const theatre_id = parseInt(localStorage.getItem("theatre_id"));
+
+fetch("http://localhost:5000/shows", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ movie_id, theatre_id })
+})
+.then(res => res.json())
+.then(data => {
+    let output = "";
+    data.forEach(show => {
+        output += `<p onclick="selectShow(${show[0]})"><span class="show-meta">Screen ${show[3]}</span>${show[2]} &middot; ${show[1]}</p>`;    });
+    document.getElementById("shows").innerHTML = output;
+});
+
+function selectShow(show_id) {
+    localStorage.setItem("show_id", show_id);
+    window.location.href = "seats.html";
+}
+
+</script>
+
+</body>
+</html>
